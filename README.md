@@ -1,4 +1,5 @@
 # Hand Gesture Control
+Control video with hand gestures via computer cam
 
 ## Introduction
 This project uses a webcam and the Mediapipe library to recognize hand gestures, allowing you to control media functions such as play/pause (Space) and volume control on your computer. The program is written in Python, featuring a simple graphical interface and audio feedback.
