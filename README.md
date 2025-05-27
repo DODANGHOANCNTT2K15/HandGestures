@@ -1,12 +1,12 @@
 # Hand Gesture Control
 Control video with hand gestures via computer cam
 
-## Introduction
+## 📖 Introduction
 This project uses a webcam and the Mediapipe library to recognize hand gestures, allowing you to control media functions such as play/pause (Space) and volume control on your computer. The program is written in Python, featuring a simple graphical interface and audio feedback.
 
 ---
 
-## Features
+## ✨ Features
 ### Media Control (Play/Pause - Space)
 - **Activation:** Show both hands open, palms facing the camera, and hold for 1 second to toggle Space mode.
 - **Execution:** When Space mode is active, make a fist (palm facing the camera) to send a Space or "K" key press (depending on the application).
@@ -25,7 +25,7 @@ This project uses a webcam and the Mediapipe library to recognize hand gestures,
 
 ---
 
-## Technologies Used
+## 🚀 Technologies Used
 - **Python:** Main programming language.
 - **Mediapipe:** Hand gesture detection and tracking.
 - **OpenCV:** Webcam video processing.
@@ -35,7 +35,7 @@ This project uses a webcam and the Mediapipe library to recognize hand gestures,
 
 ---
 
-## Installation
+## 📥 Installation
 ### Requirements:
 - Python 3.12+
 - Functional webcam.
@@ -52,7 +52,7 @@ python main.py
 
 ---
 
-## How to Use
+## ⚙️ How to Use
 1. Run `main.py` to start the webcam interface.
 2. Show your hand(s) in front of the camera and use the following gestures:
    - **Both hands open (1 second):** Toggle Space mode (Play/Pause control).
@@ -64,13 +64,13 @@ python main.py
 
 ---
 
-## Notes
+## 📋 Notes
 - Ensure good lighting conditions for accurate gesture recognition.
 - When Volume mode is enabled, Space mode is disabled to prevent conflicts.
 - Volume changes by 5% every 0.5 seconds, without displaying a progress bar (handled via `pycaw`).
 
 ---
 
-## Author
+## 📞 Author
 - **Name:** DO DANG HOAN
 - **Contact:** dodanghoana12017@gmail.com
