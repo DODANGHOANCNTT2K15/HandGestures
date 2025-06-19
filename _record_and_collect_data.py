@@ -114,6 +114,10 @@ def main():
     recording = False
     out = None # VideoWriter object
 
+    # display text variables
+    text_press = ""
+    text_selected = "Please choose a gesture to teach."
+
     print("--- Automatic Data Collection Mode ---")
     print("Select the gesture you want to record, then press 's' to start recording for 30 seconds.")
     print("Press 'q' to quit at any time.")
@@ -124,9 +128,8 @@ def main():
             break
 
         frame = cv2.flip(frame, 1) 
-
         display_frame = frame.copy() 
-
+        
         if not recording:
             # Display gesture options
             y_offset = 30
@@ -134,7 +137,9 @@ def main():
                 if id != 0:
                     cv2.putText(display_frame, f"Press {id} for: {name}", (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
                     y_offset += 30
-            cv2.putText(display_frame, "Press 's' to START recording", (10, y_offset + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
+            if text_selected:
+                cv2.putText(display_frame, text_press, (10, y_offset + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2, cv2.LINE_AA)
+                cv2.putText(display_frame, text_selected, (10, y_offset + 90), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
         else:
             # Display remaining time while recording
             elapsed_time = time.time() - start_time
@@ -151,6 +156,8 @@ def main():
                 print(f"Finished recording video: {video_filename}")
                 # After recording, automatically process this video
                 samples_from_video = process_recorded_video_and_save_landmarks(video_filepath, current_gesture_id)
+                text_press = ""
+                text_selected = "Please choose a gesture to teach."
                 total_samples_collected_overall += samples_from_video
                 print(f"Total samples collected so far: {total_samples_collected_overall}")
 
@@ -158,33 +165,17 @@ def main():
         cv2.imshow('Live Recording & Data Collection', display_frame)
 
         key = cv2.waitKey(1) & 0xFF
-
         if key == ord('q'):
             break
         elif not recording and key in [ord(str(i)) for i in gestures if i != 0]:
             # Choose gesture
             current_gesture_id = int(chr(key))
             print(f"Selected gesture: {gestures[current_gesture_id]}")
-            
-            # Get frame dimensions
-            height, width = display_frame.shape[:2]
-            
-            # Calculate text size to center it
-            text = f"Selected: {gestures[current_gesture_id]}"
-            (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-            
-            # Calculate position (center-bottom)
-            text_x = (width - text_width) // 2  # Center horizontally
-            text_y = height - 30  # 30 pixels from bottom
-            
-            # Draw text
-            cv2.putText(display_frame, text, 
-                        (text_x, text_y), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.8, (255, 0, 0), 2, cv2.LINE_AA)
+            # Update display text
+            text_press = f"Selected: {gestures[current_gesture_id]}"
+            text_selected = "Press 's' to START recording"  
             
             cv2.imshow('Live Recording & Data Collection', display_frame)
-            cv2.waitKey(500) # Give user time to see selection
         elif key == ord('s') and not recording:
             if 'current_gesture_id' not in locals():
                 print("Please select a gesture before pressing 's'!")
@@ -206,7 +197,6 @@ def main():
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             out = cv2.VideoWriter(video_filepath, fourcc, fps, (width, height))
             print(f"Started recording for gesture {gestures[current_gesture_id]} to '{video_filepath}'...")
-
 
     cap.release()
     if out is not None:
