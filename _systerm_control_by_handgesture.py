@@ -9,6 +9,7 @@ import time
 import os  
 import joblib
 import win32gui  
+import json
 
 MODEL_PATH = 'gesture_recognition_model.h5'
 SCALER_PATH = 'scaler.pkl' 
@@ -55,7 +56,7 @@ def predict_gesture(landmarks):
     
     return predicted_class
 
-def control_systerm():
+def control_video():
     # Initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
@@ -161,8 +162,36 @@ def control_systerm():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+        with open('mode_config.json', 'r') as f:
+            config = json.load(f)
+            if config.get('current_mode') == 'SLIDE':
+                print("Switching to slide control mode.")
+                break
+
     cap.release()
     cv2.destroyAllWindows()
 
+def control_slide():
+    print("Slide control functionality is not implemented yet.")
+    # Placeholder for slide control implementation
+    # This function can be implemented similarly to control_video() with different gesture mappings
+    while True:
+        with open('mode_config.json', 'r') as f:
+                config = json.load(f)
+                if config.get('current_mode') == 'VIDEO':
+                    print("Switching to video control mode.")
+                    break
+
 if __name__ == "__main__":
-    control_systerm()
+    while True:
+        with open('mode_config.json', 'r') as f:
+            config = json.load(f)
+            current_mode = config.get('current_mode')
+        
+        if current_mode == 'VIDEO':
+            control_video()
+        elif current_mode == 'SLIDE':
+            control_slide()
+        else:
+            print(f"Unknown mode: {current_mode}. Please check mode_config.json.")
+            break
