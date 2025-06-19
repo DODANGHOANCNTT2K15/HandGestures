@@ -6,7 +6,7 @@ from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.layers import Dense, Dropout # type: ignore
 from tensorflow.keras.utils import to_categorical # type: ignore
 import numpy as np
-import joblib # Để lưu scaler
+import joblib 
 
 # --- config ---
 csv_file_name = 'gesture_data_auto_record.csv' 
@@ -58,7 +58,7 @@ model.compile(optimizer='adam',
 
 print("\nStarting model training...")
 history = model.fit(X_train, y_train,
-                    epochs=75, # You can increase from 50 to 75 or 100 with more data
+                    epochs=75, 
                     batch_size=32,
                     validation_split=0.1,
                     verbose=1)
