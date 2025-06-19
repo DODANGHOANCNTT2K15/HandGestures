@@ -6,9 +6,9 @@ from tensorflow.keras.models import load_model # type: ignore
 import win32api
 import win32con
 import time
-import os  # For checking file existence
+import os  
 import joblib
-import win32gui  # For window manipulation
+import win32gui  
 
 MODEL_PATH = 'gesture_recognition_model.h5'
 SCALER_PATH = 'scaler.pkl' 
