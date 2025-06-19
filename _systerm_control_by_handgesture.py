@@ -140,7 +140,7 @@ def control_systerm():
                     current_gesture != last_gesture and 
                     current_time - last_trigger_time > gesture_cooldown):
                     
-                    # Trigger play/pause
+                    # Trigger play/paused
                     send_play_pause()
                     last_trigger_time = current_time
                     last_gesture = current_gesture
