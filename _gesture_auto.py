@@ -3,14 +3,14 @@ import mediapipe as mp
 import numpy as np
 import tensorflow as tf
 import joblib
-import os # Thêm thư viện os để kiểm tra sự tồn tại của file
+import os # Add os library to check file existence
 
-# --- Cấu hình ---
-MODEL_PATH = 'gesture_recognition_model.h5' # Tên mô hình đã lưu từ bước 1
-SCALER_PATH = 'scaler.pkl'     # Tên scaler đã lưu từ bước 1
+# --- Configuration ---
+MODEL_PATH = 'gesture_recognition_model.h5' # Name of the saved model from step 1
+SCALER_PATH = 'scaler.pkl'     # Name of the saved scaler from step 1
 
-# Các nhãn cử chỉ của bạn (PHẢI KHỚP ĐÚNG THỨ TỰ ID VÀ TÊN KHI HUẤN LUYỆN)
-# Đảm bảo các ID khớp với dữ liệu huấn luyện của bạn (0-7)
+# Your gesture labels (MUST MATCH THE EXACT ORDER OF ID AND NAME USED IN TRAINING)
+# Ensure IDs match your training data (0-7)
 GESTURE_LABELS = {
     0: "Unknown",
     1: "Closed_Fist",
@@ -22,105 +22,105 @@ GESTURE_LABELS = {
     7: "ILoveYou"
 }
 
-CONFIDENCE_THRESHOLD = 0.75 # Ngưỡng độ tin cậy để hiển thị dự đoán (có thể điều chỉnh)
+CONFIDENCE_THRESHOLD = 0.75 # Confidence threshold to display prediction (can be adjusted)
 
-# --- Kiểm tra và tải mô hình/scaler ---
+# --- Check and load model/scaler ---
 if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
-    print(f"Lỗi: Không tìm thấy file mô hình ('{MODEL_PATH}') hoặc scaler ('{SCALER_PATH}').")
-    print("Vui lòng chạy script 'train_model.py' trước để huấn luyện và lưu chúng.")
+    print(f"Error: Model file ('{MODEL_PATH}') or scaler ('{SCALER_PATH}') not found.")
+    print("Please run 'train_model.py' first to train and save them.")
     exit()
 
 try:
     model = tf.keras.models.load_model(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
-    print(f"Đã tải thành công mô hình từ '{MODEL_PATH}' và scaler từ '{SCALER_PATH}'.")
+    print(f"Successfully loaded model from '{MODEL_PATH}' and scaler from '{SCALER_PATH}'.")
 except Exception as e:
-    print(f"Lỗi khi tải mô hình hoặc scaler: {e}")
-    print("Kiểm tra lại đường dẫn file và định dạng.")
+    print(f"Error loading model or scaler: {e}")
+    print("Please check file paths and formats.")
     exit()
 
-# --- Khởi tạo MediaPipe Hands ---
+# --- Initialize MediaPipe Hands ---
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
 mp_draw = mp.solutions.drawing_utils
 
 def main():
-    cap = cv2.VideoCapture(0) # Mở camera mặc định (0)
+    cap = cv2.VideoCapture(0) # Open default camera (0)
 
     if not cap.isOpened():
-        print("Lỗi: Không thể mở camera. Vui lòng kiểm tra kết nối webcam.")
+        print("Error: Cannot open camera. Please check webcam connection.")
         return
 
-    print("Bắt đầu nhận diện cử chỉ. Nhấn 'q' để thoát.")
+    print("Gesture recognition started. Press 'q' to exit.")
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Không thể đọc frame từ camera. Thoát chương trình.")
+            print("Cannot read frame from camera. Exiting program.")
             break
 
-        # Lật khung hình theo chiều ngang cho góc nhìn tự nhiên (như gương)
+        # Flip the frame horizontally for a natural (mirror-like) view
         frame = cv2.flip(frame, 1)
 
-        # Chuyển đổi màu sắc từ BGR (OpenCV) sang RGB (MediaPipe)
+        # Convert color from BGR (OpenCV) to RGB (MediaPipe)
         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Xử lý hình ảnh với MediaPipe Hands
+        # Process image with MediaPipe Hands
         results = hands.process(image_rgb)
 
-        # Chuyển đổi lại màu sắc về BGR để hiển thị với OpenCV
+        # Convert color back to BGR for OpenCV display
         image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
 
         current_gesture_display = "No Hand Detected"
 
-        # Kiểm tra xem có bàn tay nào được phát hiện không
+        # Check if any hand is detected
         if results.multi_hand_landmarks:
-            # Lấy thông tin bàn tay đầu tiên được phát hiện để đơn giản
+            # Take the first detected hand for simplicity
             hand_landmarks = results.multi_hand_landmarks[0]
             
-            # Vẽ các điểm mốc và kết nối lên khung hình
+            # Draw landmarks and connections on the frame
             mp_draw.draw_landmarks(image_bgr, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-            # Trích xuất tọa độ điểm mốc thành một list phẳng
+            # Extract landmark coordinates into a flat list
             landmark_data = []
             for landmark in hand_landmarks.landmark:
                 landmark_data.extend([landmark.x, landmark.y, landmark.z])
 
-            # Đảm bảo số lượng đặc trưng khớp với đầu vào của mô hình (21 điểm mốc * 3 tọa độ = 63)
+            # Ensure the number of features matches model input (21 landmarks * 3 coordinates = 63)
             if len(landmark_data) == 63:
-                # Chuẩn hóa dữ liệu đầu vào bằng scaler đã được huấn luyện
+                # Normalize input data using the trained scaler
                 input_data_scaled = scaler.transform(np.array(landmark_data).reshape(1, -1))
 
-                # Dự đoán cử chỉ bằng mô hình đã tải
+                # Predict gesture using the loaded model
                 prediction = model.predict(input_data_scaled, verbose=0)[0]
                 predicted_class_id = np.argmax(prediction)
                 confidence = np.max(prediction)
 
-                # Hiển thị kết quả chỉ khi độ tin cậy đủ cao
+                # Display result only if confidence is high enough
                 if confidence > CONFIDENCE_THRESHOLD:
                     predicted_label = GESTURE_LABELS.get(predicted_class_id, "Unknown Label")
                     current_gesture_display = f"{predicted_label} ({confidence:.2f})"
                 else:
-                    # Nếu độ tin cậy thấp, vẫn hiển thị là Unknown
+                    # If confidence is low, still display as Unknown
                     current_gesture_display = f"Unknown (Conf: {confidence:.2f})"
             else:
                 current_gesture_display = "Error: Invalid Landmarks"
 
-        # Hiển thị cử chỉ dự đoán trên khung hình
+        # Display predicted gesture on the frame
         cv2.putText(image_bgr, f"Gesture: {current_gesture_display}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # Hiển thị khung hình
+        # Show the frame
         cv2.imshow('Real-time Gesture Recognition (Simple)', image_bgr)
 
-        # Nhấn 'q' để thoát
+        # Press 'q' to exit
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # Giải phóng camera và đóng tất cả cửa sổ OpenCV
+    # Release camera and close all OpenCV windows
     cap.release()
     cv2.destroyAllWindows()
-    print("Chương trình nhận diện cử chỉ đã kết thúc.")
+    print("Gesture recognition program has ended.")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,5 @@
+# Ignore MP4 files
+*.mp4
+
+# Ignore specific directory
+recorded_gestures/
