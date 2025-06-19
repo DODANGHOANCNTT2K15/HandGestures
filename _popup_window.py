@@ -62,5 +62,5 @@ def popup_window(name_window="Media Player"):
     cap.release()
     cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    popup_window()
+# if __name__ == "__main__":
+#     popup_window("Gesture Control")
