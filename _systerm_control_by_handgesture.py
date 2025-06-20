@@ -29,10 +29,17 @@ except Exception as e:
     exit()
 
 # Define gesture mappings
-GESTURES = {
-    1: "Closed_Fist",    # Pause
-    2: "Open_Palm"       # Play
-}
+GESTURES = {}
+
+def get_gesture_mappings(class_name):
+    import json
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+        mapping = config.get(class_name)
+        if mapping is not None:
+            # Chuyển key từ str sang int
+            return {int(k): v for k, v in mapping.items()}
+        return {}
 
 def send_play_pause():
     """Simulate media play/pause key press"""
@@ -57,6 +64,7 @@ def predict_gesture(landmarks):
     return predicted_class
 
 def control_video():
+    print(GESTURES)
     # Initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
@@ -167,31 +175,31 @@ def control_video():
             if config.get('current_mode') == 'SLIDE':
                 print("Switching to slide control mode.")
                 break
+        time.sleep(0.1)
 
     cap.release()
     cv2.destroyAllWindows()
 
 def control_slide():
+    print(GESTURES)
     print("Slide control functionality is not implemented yet.")
-    # Placeholder for slide control implementation
-    # This function can be implemented similarly to control_video() with different gesture mappings
     while True:
         with open('mode_config.json', 'r') as f:
-                config = json.load(f)
-                if config.get('current_mode') == 'VIDEO':
-                    print("Switching to video control mode.")
-                    break
+            config = json.load(f)
+            if config.get('current_mode') == 'VIDEO':
+                print("Switching to video control mode.")
+                break
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     while True:
         with open('mode_config.json', 'r') as f:
             config = json.load(f)
-            current_mode = config.get('current_mode')
-        
+            current_mode = config.get('current_mode', 'VIDEO')
+
         if current_mode == 'VIDEO':
+            GESTURES = get_gesture_mappings('VIDEO')    
             control_video()
         elif current_mode == 'SLIDE':
+            GESTURES = get_gesture_mappings('SLIDE')
             control_slide()
-        else:
-            print(f"Unknown mode: {current_mode}. Please check mode_config.json.")
-            break
