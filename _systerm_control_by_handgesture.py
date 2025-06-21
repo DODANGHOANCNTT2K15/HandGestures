@@ -2,6 +2,7 @@ import subprocess
 import cv2
 import mediapipe as mp
 import numpy as np
+import pyautogui
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
 import win32api
@@ -84,7 +85,7 @@ def control_video():
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
         max_num_hands=2,
-        min_detection_confidence=0.8,
+        min_detection_confidence=0.9,
         min_tracking_confidence=0.9)
     mp_draw = mp.solutions.drawing_utils
     #endregion
@@ -141,12 +142,15 @@ def control_video():
         "queue2": [gesture_key[1], gesture_key[0]],  # open_palm, closed_fist
         "queue3": [gesture_key[4], gesture_key[1], gesture_key[0]],  
         "queue4": [gesture_key[3], gesture_key[1], gesture_key[0]],  
+        "queue6": [gesture_key[0]]
     }
     current_queue_name = None
     gesture_queue = []
     activated = False
     queue_start_time = None
-    timeout = 5  # giây
+    timeout = 5  
+    volume_mode = False
+    last_gesture = None
     # endregion
 
     while True:
@@ -188,8 +192,15 @@ def control_video():
                 current_gesture = predict_gesture(hand_landmarks)
                 # endregion
 
-                # region trigger gesture 
-                if not activated:
+                # region trigger gesture
+                if not volume_mode and not activated and last_gesture is None:
+                    if current_gesture == gesture_key[6]:
+                        activated = True
+                        volume_mode = True
+                        last_gesture = current_gesture
+                        print("Chuyển sang chế độ điều khiển âm lượng!")
+                        continue 
+                if not activated and last_gesture is None:
                     if current_gesture == gesture_key[5]:
                         current_queue_name = "queue1"
                         gesture_queue = queue_templates[current_queue_name].copy()
@@ -213,9 +224,30 @@ def control_video():
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt queue4!")
+                        print("Đã kích hoạt queue4!")       
+                elif volume_mode and activated and last_gesture != current_gesture:
+                    # Lấy gesture hiện tại của tay đầu tiên
+                    hand_landmarks = results.multi_hand_landmarks[0]
+                    current_gesture = predict_gesture(hand_landmarks)
 
-                elif activated and gesture_queue:
+                    if current_gesture == gesture_key[4]:
+                        for i in range(10):
+                            pyautogui.press('volumeup')
+                        time.sleep(2)
+                        
+                    elif current_gesture == gesture_key[3]:
+                        for i in range(10):
+                            pyautogui.press('volumedown')
+                        time.sleep(2)
+
+                    elif current_gesture == gesture_key[5]:
+                        volume_mode = False
+                        activated = False
+                        last_gesture = None
+                        print("Đã tắt chế độ điều khiển âm lượng!")
+                    time.sleep(1)
+                    continue
+                elif activated and gesture_queue and last_gesture is None:
                     if current_gesture == gesture_queue[0]:
                         gesture_queue.pop(0)
                         print(f"Đã nhận đúng cử chỉ, còn lại: {gesture_queue}")
@@ -387,12 +419,14 @@ def control_slide():
                         activated = True
                         queue_start_time = time.time()
                         print("Đã kích hoạt tiếp theo")
+                        continue
                     elif current_gesture == gesture_key[2]:
                         current_queue_name = "queue2"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
                         print("Đã kích hoạt quay lui!")
+                        continue
 
                 elif activated and gesture_queue:
                     if current_gesture == gesture_queue[0]:
