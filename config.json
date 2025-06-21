@@ -9,8 +9,8 @@
     "7": "ILoveYou"      
   },
   "SLIDE": {
-    "1": "Swipe_Left",    
-    "2": "Swipe_Right",   
-    "3": "Thumb_Up"      
+    "1": "Closed_Fist",   
+    "2": "Open_Palm",
+    "3": "Pointing_Up" 
   }
 }
