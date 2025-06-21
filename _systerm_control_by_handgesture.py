@@ -53,7 +53,7 @@ def get_gesture_mappings(class_name):
         config = json.load(f)
         mapping = config.get(class_name)
         if mapping is not None:
-            # Chuyển key từ str sang int
+            # Convert key from str to int
             return {int(k): v for k, v in mapping.items()}
         return {}
 
@@ -84,7 +84,7 @@ def control_video():
     # region initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
-        max_num_hands=2,
+        max_num_hands=1,
         min_detection_confidence=0.9,
         min_tracking_confidence=0.9)
     mp_draw = mp.solutions.drawing_utils
@@ -138,8 +138,8 @@ def control_video():
 
     # region test gesture
     queue_templates = {
-        "queue1": [gesture_key[5], gesture_key[6]],  # victory, iloveyou
-        "queue2": [gesture_key[1], gesture_key[0]],  # open_palm, closed_fist
+        "queue1": [gesture_key[5], gesture_key[6]], 
+        "queue2": [gesture_key[1], gesture_key[0]],  
         "queue3": [gesture_key[4], gesture_key[1], gesture_key[0]],  
         "queue4": [gesture_key[3], gesture_key[1], gesture_key[0]],  
         "queue6": [gesture_key[0]]
@@ -169,10 +169,10 @@ def control_video():
         # endregion
 
         # region timeout check queue
-        # Kiểm tra timeout ở đầu vòng lặp (nếu đang kích hoạt)
+        # Check timeout at the beginning of the loop (if activated)
         if activated and queue_start_time is not None:
             if time.time() - queue_start_time > timeout:
-                print("Hết thời gian! Hủy hàng đợi.")
+                print("Time out! Canceling queue.")
                 gesture_queue = []
                 activated = False
                 queue_start_time = None
@@ -198,7 +198,7 @@ def control_video():
                         activated = True
                         volume_mode = True
                         last_gesture = current_gesture
-                        print("Chuyển sang chế độ điều khiển âm lượng!")
+                        print("Switched to volume control mode!")
                         continue 
                 if not activated and last_gesture is None:
                     if current_gesture == gesture_key[5]:
@@ -206,52 +206,46 @@ def control_video():
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt queue1!")
+                        print("Activated stop/turn off video!")
+                        continue
                     elif current_gesture == gesture_key[1]:
                         current_queue_name = "queue2"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt queue2!")
+                        print("Activated open application!")
+                        continue
                     elif current_gesture == gesture_key[4]:
                         current_queue_name = "queue3"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt queue3!")
+                        print("Activated next track!")
+                        continue
                     elif current_gesture == gesture_key[3]:
                         current_queue_name = "queue4"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt queue4!")       
+                        print("Activated previous track!")   
+                        continue    
                 elif volume_mode and activated and last_gesture != current_gesture:
-                    # Lấy gesture hiện tại của tay đầu tiên
-                    hand_landmarks = results.multi_hand_landmarks[0]
-                    current_gesture = predict_gesture(hand_landmarks)
-
                     if current_gesture == gesture_key[4]:
-                        for i in range(10):
-                            pyautogui.press('volumeup')
-                        time.sleep(2)
+                        pyautogui.press('volumeup')
                         
                     elif current_gesture == gesture_key[3]:
-                        for i in range(10):
-                            pyautogui.press('volumedown')
-                        time.sleep(2)
+                        pyautogui.press('volumedown')
 
                     elif current_gesture == gesture_key[5]:
                         volume_mode = False
                         activated = False
                         last_gesture = None
-                        print("Đã tắt chế độ điều khiển âm lượng!")
-                    time.sleep(1)
+                        print("Turned off volume control mode!")
                     continue
                 elif activated and gesture_queue and last_gesture is None:
                     if current_gesture == gesture_queue[0]:
                         gesture_queue.pop(0)
-                        print(f"Đã nhận đúng cử chỉ, còn lại: {gesture_queue}")
-                        time.sleep(0.2) 
+                        print(f"Correct gesture detected, remaining: {gesture_queue}")
 
                     if not gesture_queue:
                         if current_queue_name == "queue1":
@@ -260,11 +254,9 @@ def control_video():
                             subprocess.Popen(['start', 'mswindowsmusic:'], shell=True)
                         elif current_queue_name == "queue3":
                             win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, 0, 0)
-                            time.sleep(0.1)
                             win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
                         elif current_queue_name == "queue4":
                             win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, 0, 0)
-                            time.sleep(0.1)
                             win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
 
                         activated = False
@@ -275,7 +267,7 @@ def control_video():
 
                 # region display recognized gesture
                 gesture_name = GESTURES.get(current_gesture, "Unknown")
-                y_pos = 30 + idx * 40  # Mỗi tay cách nhau 40px theo chiều dọc
+                y_pos = 30 + idx * 40  # Each hand is 40px apart vertically
                 cv2.putText(frame, f"Hand {idx+1}: {gesture_name}", (10, y_pos),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 # endregion
@@ -369,7 +361,7 @@ def control_slide():
     gesture_queue = []
     activated = False
     queue_start_time = None
-    timeout = 5  # giây
+    timeout = 5  # seconds
     # endregion
 
     while True:
@@ -388,10 +380,10 @@ def control_slide():
         # endregion
 
         # region timeout check queue
-        # Kiểm tra timeout ở đầu vòng lặp (nếu đang kích hoạt)
+        # Check timeout at the beginning of the loop (if activated)
         if activated and queue_start_time is not None:
             if time.time() - queue_start_time > timeout:
-                print("Hết thời gian! Hủy hàng đợi.")
+                print("Time out! Canceling queue.")
                 gesture_queue = []
                 activated = False
                 queue_start_time = None
@@ -418,20 +410,20 @@ def control_slide():
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt tiếp theo")
+                        print("Activated next slide")
                         continue
                     elif current_gesture == gesture_key[2]:
                         current_queue_name = "queue2"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Đã kích hoạt quay lui!")
+                        print("Activated previous slide!")
                         continue
 
                 elif activated and gesture_queue:
                     if current_gesture == gesture_queue[0]:
                         gesture_queue.pop(0)
-                        print(f"Đã nhận đúng cử chỉ, còn lại: {gesture_queue}")
+                        print(f"Correct gesture detected, remaining: {gesture_queue}")
                         time.sleep(0.2) 
 
                     if not gesture_queue:
@@ -441,15 +433,15 @@ def control_slide():
                                 time.sleep(0.05)
                                 win32api.keybd_event(win32con.VK_RIGHT, 0, win32con.KEYEVENTF_KEYUP, 0)
                             else:
-                                print("Không tìm thấy cửa sổ PowerPoint Slide Show!")
+                                print("Could not find PowerPoint Slide Show window!")
                         elif current_queue_name == "queue2":
-                            print("Đã nhận đúng cử chỉ, thực hiện quay lui!")
+                            print("Correct gesture detected, going back!")
                             if focus_powerpoint_slideshow():
                                 win32api.keybd_event(win32con.VK_LEFT, 0, 0, 0)
                                 time.sleep(0.05)
                                 win32api.keybd_event(win32con.VK_LEFT, 0, win32con.KEYEVENTF_KEYUP, 0)
                             else:
-                                print("Không tìm thấy cửa sổ PowerPoint Slide Show!")
+                                print("Could not find PowerPoint Slide Show window!")
 
                         activated = False
                         gesture_queue = []
@@ -459,7 +451,7 @@ def control_slide():
 
                 # region display recognized gesture
                 gesture_name = GESTURES.get(current_gesture, "Unknown")
-                y_pos = 30 + idx * 40  # Mỗi tay cách nhau 40px theo chiều dọc
+                y_pos = 30 + idx * 40  # Each hand is 40px apart vertically
                 cv2.putText(frame, f"Hand {idx+1}: {gesture_name}", (10, y_pos),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 # endregion
