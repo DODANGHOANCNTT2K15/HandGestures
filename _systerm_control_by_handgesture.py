@@ -1,3 +1,4 @@
+import subprocess
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -65,14 +66,16 @@ def predict_gesture(landmarks):
 
 def control_video():
     print(GESTURES)
-    # Initialize MediaPipe
+    # region initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
-        max_num_hands=1,
-        min_detection_confidence=0.95,
+        max_num_hands=2,
+        min_detection_confidence=0.8,
         min_tracking_confidence=0.9)
     mp_draw = mp.solutions.drawing_utils
+    #endregion
 
+    # region gui camera
     # Initialize camera
     cap = cv2.VideoCapture(0)
 
@@ -111,14 +114,30 @@ def control_video():
                          pos_x, pos_y,
                          window_width, window_height,
                          win32con.SWP_SHOWWINDOW)
-    
-    # Control variables
+    #endregion
+
+    # region Control variables
     last_gesture = None
     gesture_cooldown = 1.0  # Seconds between gesture triggers
     last_trigger_time = 0
     window_visible = False
+    gesture_key = list(GESTURES)
+    # endregion
+
+    # region test gesture
+    queue_templates = {
+        "queue1": [gesture_key[5], gesture_key[6]],  # victory, iloveyou
+        "queue2": [gesture_key[1], gesture_key[0]],  # open_palm, closed_fist
+    }
+    current_queue_name = None
+    gesture_queue = []
+    activated = False
+    queue_start_time = None
+    timeout = 5  # giây
+    # endregion
 
     while True:
+        # region read frame
         ret, frame = cap.read()
         if not ret:
             break
@@ -130,52 +149,93 @@ def control_video():
         
         # Get window handle
         window = win32gui.FindWindow(None, window_name)
+        # endregion
 
+        # region timeout check queue
+        # Kiểm tra timeout ở đầu vòng lặp (nếu đang kích hoạt)
+        if activated and queue_start_time is not None:
+            if time.time() - queue_start_time > timeout:
+                print("Hết thời gian! Hủy hàng đợi.")
+                gesture_queue = []
+                activated = False
+                queue_start_time = None
+                current_queue_name = None
+        # endregion
+
+        # region when tracking hands
         if results.multi_hand_landmarks:
             # Show window if currently hidden
             if not window_visible:
                 win32gui.ShowWindow(window, win32con.SW_SHOW)
                 window_visible = True
-            for hand_landmarks in results.multi_hand_landmarks:
-                # Draw landmarks
+
+            for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+                # region Draw landmarks and Predict gesture
                 mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                
-                # Predict gesture
                 current_gesture = predict_gesture(hand_landmarks)
-                
-                # Check if gesture should trigger action
-                current_time = time.time()
-                if (current_gesture in GESTURES and 
-                    current_gesture != last_gesture and 
-                    current_time - last_trigger_time > gesture_cooldown):
-                    
-                    # Trigger play/paused
-                    send_play_pause()
-                    last_trigger_time = current_time
-                    last_gesture = current_gesture
-                
-                # Display recognized gesture
+                # endregion
+
+                # region trigger gesture 
+                if not activated:
+                    # Ví dụ: Victory để kích hoạt queue1, Open_Palm để kích hoạt queue2
+                    if current_gesture == gesture_key[5]:
+                        current_queue_name = "queue1"
+                        gesture_queue = queue_templates[current_queue_name].copy()
+                        activated = True
+                        queue_start_time = time.time()
+                        print("Đã kích hoạt queue1!")
+                    elif current_gesture == gesture_key[1]:
+                        current_queue_name = "queue2"
+                        gesture_queue = queue_templates[current_queue_name].copy()
+                        activated = True
+                        queue_start_time = time.time()
+                        print("Đã kích hoạt queue2!")
+
+                elif activated and gesture_queue:
+                    if current_gesture == gesture_queue[0]:
+                        gesture_queue.pop(0)
+                        print(f"Đã nhận đúng cử chỉ, còn lại: {gesture_queue}")
+                        time.sleep(0.2)  # tránh nhận liên tục
+
+                    if not gesture_queue:
+                        if current_queue_name == "queue1":
+                            send_play_pause()
+                        elif current_queue_name == "queue2":
+                            # Mở Windows Media Player (hoặc app khác bạn muốn)
+                            subprocess.Popen(['start', 'mswindowsmusic:'], shell=True)# hoặc đường dẫn đầy đủ tới media player
+                        # Có thể thêm elif cho các queue khác nếu muốn
+
+                        activated = False
+                        gesture_queue = []
+                        current_queue_name = None
+                        queue_start_time = None
+                # endregion
+
+                # region display recognized gesture
                 gesture_name = GESTURES.get(current_gesture, "Unknown")
-                cv2.putText(frame, f"Gesture: {gesture_name}", (10, 30),
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                y_pos = 30 + idx * 40  # Mỗi tay cách nhau 40px theo chiều dọc
+                cv2.putText(frame, f"Hand {idx+1}: {gesture_name}", (10, y_pos),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                # endregion
         else:
             # Hide window if no hand detected
             if window_visible:
                 win32gui.ShowWindow(window, win32con.SW_HIDE)
                 window_visible = False
             last_gesture = None
+        # endregion
 
         cv2.imshow(window_name, frame)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
+        
         with open('mode_config.json', 'r') as f:
             config = json.load(f)
             if config.get('current_mode') == 'SLIDE':
                 print("Switching to slide control mode.")
                 break
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     cap.release()
     cv2.destroyAllWindows()
