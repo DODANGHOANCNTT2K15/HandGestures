@@ -12,6 +12,7 @@ import os
 import joblib
 import win32gui  
 import json
+from _message import send_message_to_file
 
 MODEL_PATH = 'gesture_recognition_model.h5'
 SCALER_PATH = 'scaler.pkl' 
@@ -60,7 +61,6 @@ def get_gesture_mappings(class_name):
 def send_play_pause():
     """Simulate media play/pause key press"""
     win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
-    time.sleep(0.1)
     win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, win32con.KEYEVENTF_KEYUP, 0)
 
 def predict_gesture(landmarks):
@@ -80,12 +80,11 @@ def predict_gesture(landmarks):
     return predicted_class
 
 def control_video():
-    print(GESTURES)
     # region initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
         max_num_hands=1,
-        min_detection_confidence=0.9,
+        min_detection_confidence=0.95,
         min_tracking_confidence=0.9)
     mp_draw = mp.solutions.drawing_utils
     #endregion
@@ -138,11 +137,11 @@ def control_video():
 
     # region test gesture
     queue_templates = {
-        "queue1": [gesture_key[5], gesture_key[6]], 
-        "queue2": [gesture_key[1], gesture_key[0]],  
+        "queue1": [gesture_key[1], gesture_key[0]], 
+        "queue2": [gesture_key[5], gesture_key[1], gesture_key[0]],  
         "queue3": [gesture_key[4], gesture_key[1], gesture_key[0]],  
         "queue4": [gesture_key[3], gesture_key[1], gesture_key[0]],  
-        "queue6": [gesture_key[0]]
+        "queue6": [gesture_key[1], gesture_key[0]]
     }
     current_queue_name = None
     gesture_queue = []
@@ -172,7 +171,8 @@ def control_video():
         # Check timeout at the beginning of the loop (if activated)
         if activated and queue_start_time is not None:
             if time.time() - queue_start_time > timeout:
-                print("Time out! Canceling queue.")
+                # print("Time out! Canceling queue.")
+                send_message_to_file("Time out! Canceling action.")
                 gesture_queue = []
                 activated = False
                 queue_start_time = None
@@ -198,54 +198,72 @@ def control_video():
                         activated = True
                         volume_mode = True
                         last_gesture = current_gesture
-                        print("Switched to volume control mode!")
+                        current_queue_name = "queue6"
+                        gesture_queue = queue_templates[current_queue_name].copy()
+                        # print("Switched to volume control mode!")
+                        send_message_to_file("Switched to volume control mode!")
                         continue 
                 if not activated and last_gesture is None:
-                    if current_gesture == gesture_key[5]:
+                    if current_gesture == gesture_key[1]:
                         current_queue_name = "queue1"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated stop/turn off video!")
+                        # print("Activated stop/turn off video!")
+                        send_message_to_file("Activated stop/turn off video!")
                         continue
-                    elif current_gesture == gesture_key[1]:
+                    elif current_gesture == gesture_key[5]:
                         current_queue_name = "queue2"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated open application!")
+                        # print("Activated open application!")
+                        send_message_to_file("Activated open application!")
                         continue
                     elif current_gesture == gesture_key[4]:
                         current_queue_name = "queue3"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated next track!")
+                        # print("Activated next track!")
+                        send_message_to_file("Activated next track!")
                         continue
                     elif current_gesture == gesture_key[3]:
                         current_queue_name = "queue4"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated previous track!")   
-                        continue    
+                        # print("Activated previous track!")   
+                        send_message_to_file("Activated previous track!")
+                        continue   
                 elif volume_mode and activated and last_gesture != current_gesture:
                     if current_gesture == gesture_key[4]:
                         pyautogui.press('volumeup')
+                        send_message_to_file("Volume up")
+                        continue
                         
                     elif current_gesture == gesture_key[3]:
                         pyautogui.press('volumedown')
+                        send_message_to_file("Volume down")
+                        continue
+                    
+                    if gesture_queue and current_gesture == gesture_queue[0]:
+                        gesture_queue.pop(0)
 
-                    elif current_gesture == gesture_key[5]:
+                    elif not gesture_queue:
                         volume_mode = False
                         activated = False
                         last_gesture = None
-                        print("Turned off volume control mode!")
-                    continue
+                        gesture_queue = []
+                        current_queue_name = None
+                        # print("Turned off volume control mode!")
+                        send_message_to_file("Turned off volume control mode!")
+                        time.sleep(2)
+                        continue
                 elif activated and gesture_queue and last_gesture is None:
                     if current_gesture == gesture_queue[0]:
                         gesture_queue.pop(0)
-                        print(f"Correct gesture detected, remaining: {gesture_queue}")
+                        # print(f"Correct gesture detected, remaining: {gesture_queue}")
 
                     if not gesture_queue:
                         if current_queue_name == "queue1":
@@ -289,14 +307,11 @@ def control_video():
             if config.get('current_mode') == 'SLIDE':
                 print("Switching to slide control mode.")
                 break
-        time.sleep(0.05)
 
     cap.release()
     cv2.destroyAllWindows()
 
 def control_slide():
-    print(GESTURES)
-    
     # region initialize MediaPipe
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
@@ -383,7 +398,7 @@ def control_slide():
         # Check timeout at the beginning of the loop (if activated)
         if activated and queue_start_time is not None:
             if time.time() - queue_start_time > timeout:
-                print("Time out! Canceling queue.")
+                send_message_to_file("Time out! Canceling action.")
                 gesture_queue = []
                 activated = False
                 queue_start_time = None
@@ -410,38 +425,35 @@ def control_slide():
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated next slide")
+                        send_message_to_file("Activated next slide!")
                         continue
                     elif current_gesture == gesture_key[2]:
                         current_queue_name = "queue2"
                         gesture_queue = queue_templates[current_queue_name].copy()
                         activated = True
                         queue_start_time = time.time()
-                        print("Activated previous slide!")
+                        send_message_to_file("Activated previous slide!")
                         continue
 
                 elif activated and gesture_queue:
                     if current_gesture == gesture_queue[0]:
                         gesture_queue.pop(0)
-                        print(f"Correct gesture detected, remaining: {gesture_queue}")
-                        time.sleep(0.2) 
 
                     if not gesture_queue:
                         if current_queue_name == "queue1":
+                            send_message_to_file("Activated next slide!")
                             if focus_powerpoint_slideshow():
                                 win32api.keybd_event(win32con.VK_RIGHT, 0, 0, 0)
-                                time.sleep(0.05)
                                 win32api.keybd_event(win32con.VK_RIGHT, 0, win32con.KEYEVENTF_KEYUP, 0)
                             else:
-                                print("Could not find PowerPoint Slide Show window!")
+                                send_message_to_file("Could not find PowerPoint Slide Show window!")
                         elif current_queue_name == "queue2":
-                            print("Correct gesture detected, going back!")
+                            send_message_to_file("Activated previous slide!")
                             if focus_powerpoint_slideshow():
                                 win32api.keybd_event(win32con.VK_LEFT, 0, 0, 0)
-                                time.sleep(0.05)
                                 win32api.keybd_event(win32con.VK_LEFT, 0, win32con.KEYEVENTF_KEYUP, 0)
                             else:
-                                print("Could not find PowerPoint Slide Show window!")
+                                send_message_to_file("Could not find PowerPoint Slide Show window!")
 
                         activated = False
                         gesture_queue = []
