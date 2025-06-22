@@ -7,12 +7,12 @@ import threading
 
 # New library for creating system tray icon
 from pystray import Icon, Menu, MenuItem
-from PIL import Image, ImageTk # Pillow library for image processing
+from PIL import Image, ImageTk
 
-# Path to the file containing mode state
+from _message import send_message_to_file 
+
 MODE_CONFIG_FILE = 'mode_config.json'
-# Path to the icon file for the system tray (if available, otherwise use default icon)
-APP_ICON_PATH = 'mode_switcher_icon.png' # You can put your PNG image file here
+APP_ICON_PATH = 'five.png' 
 
 # --- Functions to read/write mode state to JSON file ---
 def read_current_mode_from_file():
@@ -21,7 +21,6 @@ def read_current_mode_from_file():
             config_data = json.load(f)
             mode = str(config_data.get('current_mode', 'VIDEO')).upper()
             if mode not in ["VIDEO", "SLIDE"]:
-                print(f"Warning: Invalid mode '{mode}' found in config. Defaulting to 'VIDEO'.")
                 mode = "VIDEO"
             return mode
     except (FileNotFoundError, json.JSONDecodeError):
@@ -35,6 +34,16 @@ def write_current_mode_to_file(mode):
             json.dump({'current_mode': mode.upper()}, f, indent=2)
     except IOError as e:
         print(f"Error writing to '{MODE_CONFIG_FILE}': {e}")
+
+def set_status_false():
+    try:
+        with open('message.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    data['status'] = "false"
+    with open('message.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 class ModeSwitcherApp:
     def __init__(self, master):
@@ -191,20 +200,19 @@ class ModeSwitcherApp:
 
     # --- Hide window and only show system tray icon ---
     def minimize_to_tray(self):
-        print("Window has been hidden to system tray.")
+        send_message_to_file("Window minimized to system tray.")
         self.master.withdraw() # Hide window
 
     # --- Show window from system tray ---
     def show_window_from_tray(self, icon, item):
-        # After hiding, need to call deiconify then lift and focus to show properly
         self.master.deiconify()
         self.master.lift()
         self.master.focus_force()
-        print("Window shown again.")
+        send_message_to_file("Window restored from system tray.")
 
     # --- Close the entire app from GUI close button or system tray ---
     def close_app(self):
-        print("Closing Mode Switcher app...")
+        set_status_false()  # Thêm dòng này để cập nhật
         if self.tray_icon:
             self.tray_icon.stop() # Stop system tray icon
         self.master.quit() # Stop Tkinter main loop
@@ -226,18 +234,28 @@ class ModeSwitcherApp:
         current_mode_value = "SLIDE"
         self.current_mode_display.set(current_mode_value)
         write_current_mode_to_file(current_mode_value)
-        print("Slide mode activated and updated in config!")
+        send_message_to_file("Slide mode activated.")
 
     def set_video_mode(self):
         current_mode_value = "VIDEO"
         self.current_mode_display.set(current_mode_value)
         write_current_mode_to_file(current_mode_value)
-        print("Video mode activated and updated in config!")
+        send_message_to_file("Video mode activated.")
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
+#     initial_mode = read_current_mode_from_file()
+#     write_current_mode_to_file(initial_mode)
+
+#     root = tk.Tk()
+#     app = ModeSwitcherApp(root)
+#     root.mainloop()
+
+def control_gui_mode():
     initial_mode = read_current_mode_from_file()
     write_current_mode_to_file(initial_mode)
 
     root = tk.Tk()
     app = ModeSwitcherApp(root)
     root.mainloop()
+
+    print("Application closed.")
