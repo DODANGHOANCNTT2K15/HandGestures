@@ -6,9 +6,9 @@ import os
 import time
 
 # --- config ---
-RECORD_DURATION_SECONDS = 30 # time recording duration
-OUTPUT_VIDEO_DIR = 'recorded_gestures' # folder to save recorded videos
-CSV_FILE_NAME = 'gesture_data_auto_record.csv' # name of the CSV file to save landmarks
+RECORD_DURATION_SECONDS = 30
+OUTPUT_VIDEO_DIR = 'recorded_gestures' 
+CSV_FILE_NAME = 'gesture_data_auto_record.csv' 
 
 # define MediaPipe Hands
 mp_hands = mp.solutions.hands

@@ -3,18 +3,15 @@ import json
 import os
 import time
 
-# --- Configuration ---
 MESSAGE_FILE_PATH = 'message.json'
-CHECK_INTERVAL_MS = 1000 # Check every 1 second
+CHECK_INTERVAL_MS = 1000 
 
-# --- Ensure message.json exists with initial content ---
 if not os.path.exists(MESSAGE_FILE_PATH):
     initial_data = {"message": "Welcome to the application"}
     with open(MESSAGE_FILE_PATH, 'w', encoding='utf-8') as f:
         json.dump(initial_data, f, ensure_ascii=False, indent=4)
     print(f"Created file '{MESSAGE_FILE_PATH}' with default initial message.")
 
-# --- Function to read message from file ---
 def get_message_from_file(file_path: str = MESSAGE_FILE_PATH) -> str:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -27,7 +24,6 @@ def get_message_from_file(file_path: str = MESSAGE_FILE_PATH) -> str:
     except Exception as e:
         return f"An unexpected error occurred: {e}"
 
-# --- Function to update message in file (for testing purposes) ---
 def send_message_to_file(new_message: str, file_path: str = MESSAGE_FILE_PATH):
     # Read old data
     try:
@@ -47,7 +43,6 @@ def send_message_to_file(new_message: str, file_path: str = MESSAGE_FILE_PATH):
     except IOError as e:
         print(f"I/O error when writing to file '{file_path}': {e}")
 
-# --- Tkinter setup for continuously displaying the window ---
 class MessageDisplayApp:
     def __init__(self, master):
         self.master = master
@@ -143,17 +138,6 @@ class MessageDisplayApp:
             print(f"Message updated to: '{truncated}'")
 
         self.master.after(CHECK_INTERVAL_MS, self.check_for_updates)
-
-# # --- Main execution block ---
-# if __name__ == "__main__":
-#     print("Starting message display application. Edit 'message.json' to see updates.")
-#     print("Press Ctrl+C in console to stop the application.")
-
-#     root = tk.Tk()
-#     app = MessageDisplayApp(root)
-#     root.mainloop() 
-
-#     print("Application closed.")
 
 def control_message():
     root = tk.Tk()

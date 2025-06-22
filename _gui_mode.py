@@ -25,7 +25,7 @@ def read_current_mode_from_file():
             return mode
     except (FileNotFoundError, json.JSONDecodeError):
         print(f"Warning: '{MODE_CONFIG_FILE}' not found or invalid. Initializing with default mode 'VIDEO'.")
-        write_current_mode_to_file('VIDEO') # Create file with default mode
+        write_current_mode_to_file('VIDEO') 
         return 'VIDEO'
 
 def write_current_mode_to_file(mode):

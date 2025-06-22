@@ -495,29 +495,15 @@ def control_slide():
     cap.release()
     cv2.destroyAllWindows()
 
-# if __name__ == "__main__":
-#     while True:
-#         with open('mode_config.json', 'r') as f:
-#             config = json.load(f)
-#             current_mode = config.get('current_mode', 'VIDEO')
-
-#         if current_mode == 'VIDEO':
-#             GESTURES = get_gesture_mappings('VIDEO')    
-#             control_video()
-#         elif current_mode == 'SLIDE':
-#             GESTURES = get_gesture_mappings('SLIDE')
-#             control_slide()
-
 def system_control():
     global GESTURES
-    ensure_mode_config()  # Thêm dòng này để đảm bảo file hợp lệ
+    ensure_mode_config() 
     while True:
         try:
             with open('mode_config.json', 'r') as f:
                 config = json.load(f)
                 current_mode = config.get('current_mode', 'VIDEO')
         except Exception:
-            # Nếu lỗi, tự động reset file về mặc định
             with open('mode_config.json', 'w', encoding='utf-8') as f:
                 json.dump({"current_mode": "VIDEO"}, f, ensure_ascii=False, indent=4)
             current_mode = 'VIDEO'
