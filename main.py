@@ -2,9 +2,9 @@ from multiprocessing import Process
 import time
 import json
 import os
-from _message import control_message
-from _gui_mode import control_gui_mode
-from _systerm_control_by_handgesture import system_control
+from message import control_message
+from gui_mode import control_gui_mode
+from systerm_control_by_handgesture import system_control
 
 MESSAGE_FILE_PATH = 'message.json'
 

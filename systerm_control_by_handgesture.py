@@ -12,7 +12,7 @@ import os
 import joblib
 import win32gui  
 import json
-from _message import send_message_to_file
+from message import send_message_to_file
 
 MODEL_PATH = 'gesture_recognition_model.h5'
 SCALER_PATH = 'scaler.pkl' 

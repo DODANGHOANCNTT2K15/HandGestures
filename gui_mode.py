@@ -9,7 +9,7 @@ import threading
 from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageTk
 
-from _message import send_message_to_file 
+from message import send_message_to_file 
 
 MODE_CONFIG_FILE = 'mode_config.json'
 APP_ICON_PATH = 'five.png' 
