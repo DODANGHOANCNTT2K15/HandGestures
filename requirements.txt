@@ -1,0 +1,9 @@
+opencv-python
+mediapipe
+tensorflow
+scikit-learn
+pandas
+joblib
+pyautogui
+pywin32
+Pillow

@@ -38,7 +38,7 @@ if __name__ == "__main__":
     for p in processes:
         p.start()
 
-    monitor_status(processes)  # Chạy monitor ở main process
+    monitor_status(processes)  
 
     for p in processes:
         p.join()
